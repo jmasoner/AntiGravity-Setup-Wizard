@@ -29,12 +29,29 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ profile, setProfil
 
   const copyGitScript = () => {
     const script = `
-# Initialize Git for ${projectConfig.projectName}
-cd ${profile.githubPath}\\${projectConfig.projectSlug}
+# --- AntiGravity Git Initializer ---
+# Project: ${projectConfig.projectName}
+
+# 1. Navigate to Project Root
+$targetPath = "${profile.githubPath}\\${projectConfig.projectSlug}"
+if (!(Test-Path $targetPath)) { New-Item -ItemType Directory -Force -Path $targetPath }
+cd $targetPath
+
+# 2. Initialize Local Repo
 git init
 git branch -M main
 git add .
 git commit -m "Initial commit: ${projectConfig.projectName}"
+
+# 3. Configure GitHub Credentials (Prevent 403 Errors)
+Write-Host "Configuring Git Credential Manager..." -ForegroundColor Cyan
+gh auth setup-git
+
+# NOTE: If you get a 'Permission denied' or 403 error, uncomment and run the line below to refresh credentials:
+# gh auth refresh -h github.com -s repo,workflow,write:packages,delete_repo
+
+# 4. Create and Push to GitHub
+Write-Host "Creating Remote Repository..." -ForegroundColor Cyan
 gh repo create ${projectConfig.projectSlug} --public --source=. --remote=origin --push
     `.trim();
     navigator.clipboard.writeText(script);

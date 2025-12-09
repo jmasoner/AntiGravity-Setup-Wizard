@@ -1,6 +1,6 @@
 import React from 'react';
 import { GeneratedContent } from '../types';
-import { Copy, Terminal } from 'lucide-react';
+import { Copy, Terminal, Download } from 'lucide-react';
 
 interface ResultViewerProps {
   content: GeneratedContent | null;
@@ -8,6 +8,18 @@ interface ResultViewerProps {
 }
 
 export const ResultViewer: React.FC<ResultViewerProps> = ({ content, loading }) => {
+  const downloadFile = (filename: string, content: string) => {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="w-full h-96 flex flex-col items-center justify-center space-y-4 bg-slate-950/50 rounded-xl border border-slate-800 animate-pulse">
@@ -46,13 +58,22 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ content, loading }) 
             <div key={idx} className="bg-[#0d1117] rounded-lg border border-slate-700 overflow-hidden">
               <div className="flex justify-between items-center px-4 py-2 bg-slate-800/50 border-b border-slate-700">
                 <span className="text-xs font-mono text-slate-400">{script.filename}</span>
-                <button 
-                  onClick={() => navigator.clipboard.writeText(script.content)}
-                  className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition"
-                  title="Copy Code"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                    onClick={() => downloadFile(script.filename, script.content)}
+                    className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition flex items-center gap-1"
+                    title="Download File"
+                    >
+                    <Download className="w-4 h-4" /> <span className="text-xs">Download</span>
+                    </button>
+                    <button 
+                    onClick={() => navigator.clipboard.writeText(script.content)}
+                    className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition flex items-center gap-1"
+                    title="Copy to Clipboard"
+                    >
+                    <Copy className="w-4 h-4" /> <span className="text-xs">Copy</span>
+                    </button>
+                </div>
               </div>
               <pre className="p-4 overflow-x-auto text-sm text-blue-100 font-mono">
                 {script.content}

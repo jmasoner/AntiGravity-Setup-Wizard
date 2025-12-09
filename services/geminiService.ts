@@ -6,17 +6,17 @@ const getSystemInstruction = (mode: GeneratorMode): string => {
     case GeneratorMode.SETUP_GUIDE:
       return "You are a Senior DevOps Engineer specializing in Windows and Cloud environments. Your goal is to provide clear, step-by-step instructions for setting up a development environment called 'AntiGravity'. Focus on PowerShell, Windows Terminal, and API configuration.";
     case GeneratorMode.DRIVE_MAPPING:
-      return "You are an IT Support Specialist. Explain clearly how to install Google Drive for Desktop on Windows and verify the drive letter mapping.";
+      return "You are an IT Support Specialist. Explain clearly how to install Google Drive for Desktop and Windows mapping.";
     case GeneratorMode.PROJECT_SCAFFOLD:
-      return "You are a Build Engineer. Generate PowerShell scripts to create directory structures, initialize git, and create default config files.";
+      return "You are a Build Engineer. Generate PowerShell scripts to create directory structures and git repos.";
     case GeneratorMode.README_GEN:
-      return "You are a Technical Writer. Create professional README.md files including contact info and project scope.";
+      return "You are a Technical Writer. Create professional README.md files.";
     case GeneratorMode.ARCHITECT_INTERVIEW:
-      return "You are an Enterprise Solutions Architect and CTO. Your goal is to interview the user to deeply understand their project requirements. Do not just ask for the name. Ask about: 1. Scale (POC vs Enterprise). 2. Architecture (Monolith vs Microservices/Modular). 3. Specific Tech Constraints. Your tone should be professional, insightful, and guiding.";
+      return "You are an Enterprise Solutions Architect and CTO. Your goal is to interview the user to deeply understand their project requirements. Do not just ask for the name. Dig deep into Scale, Architecture (Monolith vs Microservices), Tech Constraints, and Long-term goals. Be conversational. Ask 1-2 focused questions at a time.";
     case GeneratorMode.ARCHITECT_BLUEPRINT:
-      return "You are a CTO. Based on the interview, define the architecture. Output valid JSON only describing the 'blueprint' with fields: name, architectureType (MODULAR|FLAT), description, phases (array of strings), techStack (array of strings), folderStructure (string representation of tree), rationale.";
+      return "You are a CTO. Based on the interview, define the architecture. Output valid JSON only describing the 'blueprint'.";
     case GeneratorMode.ARCHITECT_FABRICATE:
-      return "You are a Senior Systems Engineer. You are responsible for creating the 'Mission Files' for the project. You must generate: 1. A CONTEXT.md file (The Brains) which acts as a seed prompt for AI agents. 2. An 'init' PowerShell script (The Builder) that physically builds the scaffold. 3. A 'resume' PowerShell script (The Daily Driver) that launches a multi-tabbed Windows Terminal environment for immediate productivity.";
+      return "You are a Senior Systems Engineer. You are responsible for creating the 'Mission Files' for the project. IMPORTANT: You must output scripts in code blocks. The FIRST LINE of every code block MUST be a comment with the filename, e.g., '# FILENAME: script_name.ps1'. This is required for the system to save the files.";
     default:
       return "You are a helpful AI assistant.";
   }
@@ -60,7 +60,18 @@ export const generateContent = async (
       3. Explain how to manage API keys safely.
       4. Include a specific section on "Bootstrapping this Tool":
          - Instructions for initializing the git repo for "AntiGravity Setup Wizard" at ${profile.githubPath}\\AntiGravity-Setup-Wizard.
+         - Instructions must include running 'gh auth setup-git' to avoid permission errors.
          - How to use 'gh repo create' to push it to GitHub.
+      
+      BONUS:
+      At the end, provide a single copy-pasteable PowerShell block.
+      FIRST LINE: # FILENAME: bootstrap_antigravity.ps1
+      The script must:
+      1. Checks if the AntiGravity directory exists.
+      2. Initializes git.
+      3. Creates a .gitignore (node_modules, .env).
+      4. Runs 'gh auth setup-git'.
+      5. Creates the repo and pushes.
     `;
   } else if (mode === GeneratorMode.README_GEN && project) {
     prompt = `
@@ -77,32 +88,39 @@ export const generateContent = async (
   }
 
   // --- ARCHITECT MODES ---
-  
   else if (mode === GeneratorMode.ARCHITECT_INTERVIEW && architectState) {
-    prompt = `
-      User's Initial Idea: "${architectState.rawIdea}"
+    const historyText = architectState.chatHistory
+        .map(msg => `${msg.role.toUpperCase()}: ${msg.content}`)
+        .join('\n\n');
 
-      Analyze this idea as a CTO.
-      1. Briefly restate the goal to confirm understanding.
-      2. Ask 3-4 critical architectural questions. 
-         - Help the user decide: Is this a "Flat" app (Simple, fast) or "Modular" (Scalable, complex)?
-         - Ask about specific data needs or integrations.
-         - Ask about the intended lifespan (Prototype or Enterprise System?).
+    prompt = `
+      Current Conversation History:
+      ${historyText}
+
+      User's Latest Idea/Input: "${architectState.rawIdea}" (or see history)
+
+      Task:
+      Review the conversation. 
+      If this is the start, ask clarifying questions about Scale, Architecture, and Tech.
+      If the user has answered, analyze their answers.
+      - Did they miss anything critical?
+      - Do you need to clarify "Modular" vs "Flat"?
+      - Ask 1-2 follow-up questions to build a complete picture.
       
-      Format your response as a conversation starter. Do not use JSON.
+      Keep it professional but conversational. Do not output JSON yet.
     `;
   }
-
   else if (mode === GeneratorMode.ARCHITECT_BLUEPRINT && architectState) {
     isJsonMode = true;
-    const interviewText = architectState.interviewQandA.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n');
-    prompt = `
-      User's Idea: "${architectState.rawIdea}"
-      
-      Interview Results:
-      ${interviewText}
+    const historyText = architectState.chatHistory
+        .map(msg => `${msg.role.toUpperCase()}: ${msg.content}`)
+        .join('\n\n');
 
-      Based on this, create a Project Blueprint.
+    prompt = `
+      Full Project Discussion:
+      ${historyText}
+
+      Based on this deep dive, create a Project Blueprint.
       Output ONLY valid JSON matching this structure:
       {
         "name": "ProjectName (CamelCase)",
@@ -115,7 +133,6 @@ export const generateContent = async (
       }
     `;
   }
-
   else if (mode === GeneratorMode.ARCHITECT_FABRICATE && architectState && architectState.blueprint) {
     const bp = architectState.blueprint;
     const hostingInfo = profile.hostingHostname 
@@ -144,39 +161,39 @@ export const generateContent = async (
 
       TASK:
       Generate 3 distinct files. Use markdown code blocks.
+      IMPORTANT: You MUST start the content of each code block with a comment line identifying the filename.
 
       CRITICAL PATH LOGIC:
       - The user may have 'OneDrive\\MyProjects' and 'GitHub Repo Root' pointed to the same folder.
       - In your generated PowerShell script, verify paths before creating them. If they are the same, treat the OneDrive folder as the Master Git Repo.
-      - If they are different, assume the user wants a Git Repo in one place and a synced backup in OneDrive.
 
       FILE 1: CONTEXT.md
-      - This file acts as the "Long Term Memory" for AI agents.
-      - Include the project goals, architecture, tech stack, and phases.
-      - Include the User's contact info.
-      - Include a "Master Prompt" section that tells an AI agent how to start working on Phase 1.
-      - Use clear Markdown headers.
+      - Start with: <!-- FILENAME: CONTEXT.md -->
+      - Include project goals, architecture, tech stack, and user contact info.
+      - Include a "Master Prompt" section.
 
       FILE 2: init_${bp.name.toLowerCase()}.ps1 (The Ignition Script)
-      - Create the project directories. Handle the path logic described above.
-      - Initialize git ('git init').
-      - Write the CONTEXT.md file to the root.
-      - Create a .env.example.
-      - Create a README.md (use the user's contact details).
-      - ENTERPRISE GIT: Check for 'gh' CLI. If installed, run 'gh repo create ${bp.name} --public --source=. --remote=origin' and 'git push -u origin main'.
-      - Output "Ignition Complete" at the end.
+      - Start with: # FILENAME: init_${bp.name.toLowerCase()}.ps1
+      - This script will CREATE the CONTEXT.md file on disk.
+      - CRITICAL SYNTAX RULE: When writing the content of CONTEXT.md to a variable using a PowerShell Here-String (@' ... '@), you MUST ensure the closing '@ is on its OWN LINE with NO INDENTATION.
+        Correct:
+        $content = @'
+        ...text...
+        '@
+        
+        Incorrect (Causes ParserError):
+        $content = @'
+        ...text...
+          '@
+      - Create directories, git init, .gitignore.
+      - ENTERPRISE GIT: Run 'gh auth setup-git', then 'gh repo create ... --push'.
+      - Handle 403 errors: "If ($LASTEXITCODE -ne 0) { gh auth refresh ...; git push ... }"
 
       FILE 3: resume_${bp.name.toLowerCase()}.ps1 (The Orbit Script)
-      - This script is for daily use.
-      - 1. Check if project paths exist.
-      - 2. Navigate to the project root and run 'git fetch' (silently).
-      - 3. Launch Windows Terminal (wt.exe) with a unified dashboard.
-           Use the following wt command structure (adjust paths as needed):
-           wt -w 0 new-tab -p "Windows PowerShell" -d "PROJECT_ROOT" -t "Mission Control" ; split-pane -p "Windows PowerShell" -H -d "PROJECT_ROOT" ; new-tab -p "Windows PowerShell" -d "PROJECT_ROOT" -t "AI Agents" cmd /k "echo Launching Claude... & claude" ; split-pane -V cmd /k "echo Launching Gemini... & gemini" 
-      - 4. If Hosting info is provided, add another tab to the wt command that attempts to SSH: ssh -i ${profile.sshKeyPath} ${profile.hostingUsername}@${profile.hostingHostname}
-           (If WebDisk is preferred, attempt to mount the drive first using net use).
-      - 5. Read the content of CONTEXT.md and copy it to the clipboard (Set-Clipboard).
-      - 6. Print "Project Resumed. CONTEXT.md copied to clipboard."
+      - Start with: # FILENAME: resume_${bp.name.toLowerCase()}.ps1
+      - Launch Windows Terminal (wt.exe) with tabs for 'Mission Control' (PowerShell), 'AI Agents' (Claude/Gemini), and 'Code'.
+      - If Hosting info is present, add SSH tab.
+      - Copy CONTEXT.md to clipboard.
     `;
   }
 
@@ -193,41 +210,30 @@ export const generateContent = async (
 
     const text = response.text || "";
 
-    // If Blueprint mode, we just return the JSON text to be parsed by the component
     if (mode === GeneratorMode.ARCHITECT_BLUEPRINT) {
         return { markdown: text };
     }
     
-    // Extract scripts for Fabricate mode
     const scripts: {filename: string, content: string, language: string}[] = [];
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     let match;
-    let count = 1;
+    
     while ((match = codeBlockRegex.exec(text)) !== null) {
       const lang = match[1] || 'text';
-      let content = match[2];
-      let extension = 'txt';
-      let filename = `file_${count}`;
+      const content = match[2].trim();
+      const firstLine = content.split('\n')[0].trim();
+      let filename = '';
 
-      // Heuristic filename detection
-      if (content.includes('Get-Content') || content.includes('New-Item') || lang === 'powershell' || lang === 'ps1') {
-        extension = 'ps1';
-        if (content.includes('wt') || content.includes('resume')) {
-             filename = `resume_${architectState?.blueprint?.name.toLowerCase() || 'project'}`;
-        } else {
-             filename = `init_${architectState?.blueprint?.name.toLowerCase() || 'project'}`;
-        }
-      } else if (lang === 'md' || lang === 'markdown') {
-        extension = 'md';
-        filename = 'CONTEXT';
+      if (firstLine.includes('FILENAME:')) {
+         const parts = firstLine.split('FILENAME:');
+         if (parts.length > 1) {
+             filename = parts[1].trim().replace('-->', '').trim();
+         }
       }
 
-      scripts.push({
-        filename: `${filename}.${extension}`,
-        content: content.trim(),
-        language: lang
-      });
-      count++;
+      if (filename) {
+          scripts.push({ filename, content, language: lang });
+      }
     }
 
     return {
