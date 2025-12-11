@@ -13,8 +13,9 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   oneDrivePath: "C:\\Users\\john\\OneDrive",
   githubPath: "C:\\Users\\john\\OneDrive\\MyProjects", // Updated to match user workflow
   hostingHostname: "", // e.g. aikbr.com
-  hostingUsername: "", 
-  sshKeyPath: "C:\\Users\\john\\.ssh\\id_rsa"
+  hostingUsername: "",
+  sshKeyPath: "C:\\Users\\john\\.ssh\\id_rsa",
+  selectedAIModel: "gemini-2.5-flash" // Default AI model
 };
 
 export const TOOLS_LIST = [

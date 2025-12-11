@@ -5,7 +5,8 @@ import { ResultViewer } from './components/ResultViewer';
 import { ProjectArchitect } from './components/ProjectArchitect';
 import { INITIAL_USER_PROFILE, TOOLS_LIST } from './constants';
 import { UserProfile, ProjectConfig, GeneratorMode, GeneratedContent } from './types';
-import { generateContent } from './services/geminiService';
+import { generateContent } from './services/aiService';
+import { AIModel } from './types';
 import { Play, Download, Github } from 'lucide-react';
 
 function App() {
@@ -27,7 +28,8 @@ function App() {
     setLoading(true);
     setResult(null);
     try {
-      const content = await generateContent(mode, profile, projectConfig);
+      const selectedModel = profile.selectedAIModel || 'gemini-2.5-flash';
+      const content = await generateContent(mode, profile, { model: selectedModel }, projectConfig);
       setResult(content);
     } catch (e) {
       console.error(e);
@@ -40,14 +42,14 @@ function App() {
     switch (activeTab) {
       case 'profile':
         return (
-          <ProfileEditor 
-            profile={profile} 
-            setProfile={setProfile} 
+          <ProfileEditor
+            profile={profile}
+            setProfile={setProfile}
             projectConfig={projectConfig}
             setProjectConfig={setProjectConfig}
           />
         );
-      
+
       case 'drive':
         return (
           <div className="space-y-6">
@@ -72,10 +74,10 @@ function App() {
       case 'setup':
         return (
           <div className="space-y-6">
-             <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-800/50 p-6 rounded-xl">
+            <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900 border border-emerald-800/50 p-6 rounded-xl">
               <h2 className="text-2xl font-bold text-white mb-2">AntiGravity Environment Setup</h2>
               <p className="text-slate-300 mb-6">
-                Create the master instruction set for installing Python, Node.js, Git, Gemini CLI, and Claude CLI. 
+                Create the master instruction set for installing Python, Node.js, Git, Gemini CLI, and Claude CLI.
                 This will also cover setting up your `MyProjects` folder structure in {profile.oneDrivePath} and {profile.googleDrivePath}.
               </p>
               <button
@@ -99,23 +101,23 @@ function App() {
           <div className="space-y-6">
             <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl space-y-6">
               <div className="flex items-center justify-between">
-                 <h2 className="text-2xl font-bold text-white">README Generator</h2>
-                 <Github className="text-orange-500 w-8 h-8" />
+                <h2 className="text-2xl font-bold text-white">README Generator</h2>
+                <Github className="text-orange-500 w-8 h-8" />
               </div>
               <p className="text-slate-400 text-sm">
                 Generates a standardized README.md incorporating your contact details and the current project configuration.
               </p>
-              
-               <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-400">Project Description</label>
-                    <textarea 
-                      value={projectConfig.description}
-                      onChange={(e) => setProjectConfig({...projectConfig, description: e.target.value})}
-                      className="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white resize-none"
-                    />
-               </div>
 
-               <button
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">Project Description</label>
+                <textarea
+                  value={projectConfig.description}
+                  onChange={(e) => setProjectConfig({ ...projectConfig, description: e.target.value })}
+                  className="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white resize-none"
+                />
+              </div>
+
+              <button
                 onClick={() => handleGenerate(GeneratorMode.README_GEN)}
                 disabled={loading}
                 className="w-full bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold transition shadow-lg shadow-orange-900/20 disabled:opacity-50"

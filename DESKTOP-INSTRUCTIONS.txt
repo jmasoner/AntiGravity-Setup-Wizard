@@ -1,0 +1,69 @@
+═══════════════════════════════════════════════════════════
+   ANTIGRAVITY SETUP WIZARD - DESKTOP INSTRUCTIONS
+═══════════════════════════════════════════════════════════
+
+📍 TO LAUNCH THE APPLICATION:
+
+   1. Copy "Launch-AntiGravity.bat" from the project folder
+      to your Desktop
+
+   2. Double-click "Launch-AntiGravity.bat" on your Desktop
+
+   3. The application will automatically open in your browser
+      at http://localhost:5173
+
+───────────────────────────────────────────────────────────
+
+📁 PROJECT LOCATION:
+
+   C:\Users\john\OneDrive\MyProjects\AntiGravity-Setup-Wizard
+
+───────────────────────────────────────────────────────────
+
+🔑 FIRST TIME SETUP:
+
+   1. Create a file named ".env" in the project folder
+
+   2. Add your API keys:
+      VITE_GEMINI_API_KEY=your_key_here
+      VITE_ANTHROPIC_API_KEY=your_key_here
+
+   3. Get API keys from:
+      • Gemini: https://makersuite.google.com/app/apikey
+      • Claude: https://console.anthropic.com/
+
+───────────────────────────────────────────────────────────
+
+🤖 AI MODELS AVAILABLE:
+
+   • Google Gemini 2.5 Flash (Fast & Free)
+   • Claude 3.5 Sonnet (Balanced)
+   • Claude 3 Opus (Highest Quality)
+
+   Select your preferred model in the Profile tab!
+
+───────────────────────────────────────────────────────────
+
+📚 DOCUMENTATION:
+
+   • QUICK-START.md - Quick reference guide
+   • USER-GUIDE.md - Complete user manual
+   • README.md - Full project documentation
+   • IMPLEMENTATION-SUMMARY.md - Technical details
+
+───────────────────────────────────────────────────────────
+
+💡 REMEMBER:
+
+   The script to launch is: npm run dev
+   The application runs on: localhost:5173
+
+───────────────────────────────────────────────────────────
+
+📞 CONTACT:
+
+   John Masoner
+   Email: john@masoner.us
+   Phone: 360-513-4238
+
+═══════════════════════════════════════════════════════════
